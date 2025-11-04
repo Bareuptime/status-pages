@@ -41,14 +41,14 @@ export function StatusHeader({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.location.href = 'https://bareuptime.co/signin'}
+              onClick={() => window.location.href = 'https://app.bareuptime.co/signin'}
               className="hover:bg-muted"
             >
               Sign in
             </Button>
             <Button
               size="sm"
-              onClick={() => window.location.href = 'https://bareuptime.co/signin'}
+              onClick={() => window.location.href = 'https://app.bareuptime.co/signin'}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Get started

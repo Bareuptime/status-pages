@@ -8,7 +8,7 @@ interface StatusPageFooterProps {
 export function StatusPageFooter({ lastRefresh }: StatusPageFooterProps) {
   const handleGetStarted = () => {
     if (typeof window !== 'undefined') {
-      window.location.href = 'https://bareuptime.co/signin'
+      window.location.href = 'https://app.bareuptime.co/signin'
     }
   }
 
