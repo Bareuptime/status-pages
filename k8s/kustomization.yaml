@@ -13,7 +13,7 @@ commonLabels:
   environment: production
   managed-by: argocd
 
-# Images to track (for ArgoCD image updater)
+# Images to track (for ArgoCD API-triggered updates)
 images:
   - name: ghcr.io/bareuptime/status-pages
-    newTag: latest
+    newTag: main

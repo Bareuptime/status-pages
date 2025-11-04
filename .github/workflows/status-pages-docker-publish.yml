@@ -69,6 +69,7 @@ jobs:
           type=semver,pattern={{major}}
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=staged,enable={{is_default_branch}}
+          type=sha,prefix={{branch}}-,enable={{is_default_branch}}
 
     - name: Build and push Docker image
       id: build
@@ -89,6 +90,89 @@ jobs:
       if: github.event_name != 'pull_request'
       run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"
 
-    # Note: ArgoCD with Image Updater should automatically detect the new image
-    # and sync the deployment. If manual deployment is needed, add a step here
-    # to trigger ArgoCD sync or post to your deployment webhook.
+    - name: Get ArgoCD Token
+      if: github.event_name != 'pull_request'
+      id: argocd-auth
+      run: |
+        # Fetch ArgoCD token using admin credentials
+        ARGOCD_TOKEN=$(curl -k -X POST ${{ secrets.ARGOCD_SERVER }}/api/v1/session \
+          -d '{"username":"admin","password":"${{ secrets.ARGOCD_PASSWORD }}"}' \
+          -H "Content-Type: application/json" | jq -r .token)
+
+        if [ "$ARGOCD_TOKEN" = "null" ] || [ -z "$ARGOCD_TOKEN" ]; then
+          echo "❌ Failed to get ArgoCD token"
+          exit 1
+        fi
+
+        echo "✅ Successfully obtained ArgoCD token"
+        echo "argocd_token=${ARGOCD_TOKEN}" >> $GITHUB_OUTPUT
+
+    - name: Update ArgoCD Application Image Tag
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "🚀 Updating ArgoCD application image tag via Kustomization..."
+
+        # Get the commit SHA as the tag
+        IMAGE_TAG="main-${{ github.sha }}"
+
+        echo "📋 Using image tag: $IMAGE_TAG"
+        echo "🎯 Updating image: ghcr.io/bareuptime/status-pages:$IMAGE_TAG"
+
+        # First get the current application configuration
+        echo "📥 Getting current application configuration..."
+        CURRENT_APP=$(curl -s \
+          --location '${{ secrets.ARGOCD_SERVER }}/api/v1/applications/bareuptime-status-page' \
+          --header 'Authorization: Bearer ${{ steps.argocd-auth.outputs.argocd_token }}')
+
+        # Extract necessary fields and update image
+        UPDATED_APP=$(echo "$CURRENT_APP" | jq --arg IMAGE_TAG "$IMAGE_TAG" '
+          {
+            metadata: .metadata,
+            spec: (.spec |
+              .source.path = "k8s" |
+              .source.kustomize.images = ["ghcr.io/bareuptime/status-pages:\($IMAGE_TAG)"]
+            )
+          }')
+
+        # Update the ArgoCD application with new image tag using PUT
+        RESPONSE=$(curl -s -w "\n%{http_code}" \
+          --location '${{ secrets.ARGOCD_SERVER }}/api/v1/applications/bareuptime-status-page' \
+          --request PUT \
+          --header 'Content-Type: application/json' \
+          --header 'Authorization: Bearer ${{ steps.argocd-auth.outputs.argocd_token }}' \
+          --data "$UPDATED_APP")
+
+        # Check response
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
+
+        if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            echo "✅ ArgoCD application updated successfully!"
+            echo "🎯 Updated image tag to: $IMAGE_TAG"
+        else
+            echo "❌ Failed to update ArgoCD application (HTTP $HTTP_CODE)"
+            echo "Response: $RESPONSE_BODY"
+            exit 1
+        fi
+
+    - name: Create deployment summary
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "## 🚀 ArgoCD Kustomization Deployment" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Application:** \`bareuptime-status-page\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployment Method:** ArgoCD API with Kustomization" >> $GITHUB_STEP_SUMMARY
+        echo "**Configuration Source:** Git Repository (\`k8s/\`)" >> $GITHUB_STEP_SUMMARY
+        echo "**Image Deployed:** \`ghcr.io/bareuptime/status-pages:main-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Images Built:**" >> $GITHUB_STEP_SUMMARY
+        echo "- \`ghcr.io/bareuptime/status-pages:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "- \`ghcr.io/bareuptime/status-pages:staged\`" >> $GITHUB_STEP_SUMMARY
+        echo "- \`ghcr.io/bareuptime/status-pages:main-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Build:** \`${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Deployment completed using ArgoCD Kustomization approach" >> $GITHUB_STEP_SUMMARY
+        echo "🎯 No Git commits needed for image tag updates" >> $GITHUB_STEP_SUMMARY
+        echo "📋 Configuration managed in Git (\`k8s/\`), image tags updated via API" >> $GITHUB_STEP_SUMMARY
