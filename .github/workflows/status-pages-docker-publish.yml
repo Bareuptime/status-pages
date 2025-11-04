@@ -5,8 +5,8 @@ on:
     branches: [ "main", "master" ]
     tags: [ "v*" ]
     paths:
-      - 'status-pages/**'
-      - '.github/workflows/docker-publish.yml'
+      - 'src/**'
+      - '.github/workflows/status-pages-docker-publish.yml'
   workflow_dispatch:
 
 env:
