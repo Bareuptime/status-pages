@@ -1,0 +1,19 @@
+---
+# IngressRoute for Status Pages - Wildcard Subdomains
+# Routes *.bareuptime.online to status-pages service
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: status-pages-wildcard
+  namespace: bareuptime-backend
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: HostRegexp(`^(?:[a-z0-9-]+\.)?bareuptime\.online$`)
+      kind: Rule
+      services:
+        - name: status-pages
+          port: 3000
+  tls:
+    secretName: bareuptime-online-wildcard-tls

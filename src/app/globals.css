@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-in-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* Vercel Light Theme - Soft and minimal */
+    --background: 0 0% 99%;           /* Soft white, not harsh */
+    --foreground: 0 0% 10%;           /* Near black, high contrast */
+    --card: 0 0% 100%;                /* White cards on soft background */
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 9%;               /* Black for primary actions */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96%;            /* Light gray */
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 96%;                /* Subtle backgrounds */
+    --muted-foreground: 0 0% 45%;     /* Medium gray text */
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 84% 60%;         /* Red for errors */
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;               /* Visible but subtle borders */
+    --input: 0 0% 90%;
+    --ring: 0 0% 10%;                 /* Black focus rings */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    /* Vercel Dark Theme - Soft blacks with depth */
+    --background: 0 0% 9%;            /* Soft black, not pure black */
+    --foreground: 0 0% 95%;           /* Off-white text */
+    --card: 0 0% 12%;                 /* Elevated from background for depth */
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 12%;              /* Matching card elevation */
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 98%;              /* White for primary actions */
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 16%;            /* Darker gray */
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 16%;                /* Subtle backgrounds */
+    --muted-foreground: 0 0% 60%;     /* Muted text */
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 63% 31%;         /* Darker red for dark mode */
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;               /* More visible borders */
+    --input: 0 0% 20%;
+    --ring: 0 0% 83%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Improve text clarity on dark backgrounds */
+  .dark-mode-text {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1;
+  }
+
+  /* Better rendering for gradient text */
+  .gradient-text {
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+  }
+}

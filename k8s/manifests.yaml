@@ -1,0 +1,145 @@
+# ===============================================
+# BareUptime Status Pages - Public Frontend
+# Next.js application for public status pages
+# Accessible via *.bareuptime.online
+# ===============================================
+
+---
+# ConfigMap for environment configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: status-pages-config
+  namespace: bareuptime-backend
+  labels:
+    app: status-pages
+    component: frontend
+data:
+  api-url: "https://api1.bareuptime.co"
+  node-env: "production"
+
+---
+# Service for Status Pages
+apiVersion: v1
+kind: Service
+metadata:
+  name: status-pages
+  namespace: bareuptime-backend
+  labels:
+    app: status-pages
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app: status-pages
+  sessionAffinity: None
+
+---
+# Deployment for Status Pages
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-pages
+  namespace: bareuptime-backend
+  labels:
+    app: status-pages
+    component: frontend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: status-pages
+  template:
+    metadata:
+      labels:
+        app: status-pages
+        component: frontend
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+
+      containers:
+        - name: status-pages
+          image: ghcr.io/bareuptime/status-pages:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3000
+              name: http
+              protocol: TCP
+
+          env:
+            # Node.js configuration
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: status-pages-config
+                  key: node-env
+            - name: NEXT_PUBLIC_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: status-pages-config
+                  key: api-url
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            # Disable Next.js telemetry
+            - name: NEXT_TELEMETRY_DISABLED
+              value: "1"
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          # Liveness probe - check if app is running
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Readiness probe - check if app is ready to serve traffic
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
