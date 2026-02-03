@@ -73,6 +73,7 @@ spec:
         - name: status-pages
           image: ghcr.io/bareuptime/status-pages:latest
           imagePullPolicy: Always
+          terminationMessagePolicy: FallbackToLogsOnError
 
           ports:
             - containerPort: 3000
