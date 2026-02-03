@@ -175,7 +175,7 @@ If you see a process like `[rbot]` in `ps` output, it means a short-lived child 
 - A compromised container image or dependency launched a helper process
 - PID 1 was not acting as an init process (fixed by the tini entrypoint)
 
-Rotate credentials, check audit logs for exec access, and redeploy with the updated image to ensure zombies are reaped.
+First check audit logs for exec access; if you find unauthorized access, rotate credentials, then redeploy with the updated image to ensure zombies are reaped.
 
 ## Troubleshooting
 
