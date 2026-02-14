@@ -1,8 +1,15 @@
 # syntax=docker/dockerfile:1
 
 # Stage 1: Dependencies
-FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat
+# Using specific version with SHA256 digest for security
+FROM node:22.13.1-alpine3.21@sha256:ed9736a13b88ba55cbc08c75c9edac8ae7f72840482e40324670b299336680c1 AS deps
+
+# Security: Update all packages and remove apk cache
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache libc6-compat && \
+    rm -rf /var/cache/apk/*
+
 WORKDIR /app
 
 # Copy package files
@@ -13,7 +20,7 @@ RUN npm ci && \
     npm cache clean --force
 
 # Stage 2: Builder
-FROM node:22-alpine AS builder
+FROM node:22.13.1-alpine3.21@sha256:ed9736a13b88ba55cbc08c75c9edac8ae7f72840482e40324670b299336680c1 AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
@@ -28,12 +35,17 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # Stage 3: Runner
-FROM node:22-alpine AS runner
+FROM node:22.13.1-alpine3.21@sha256:ed9736a13b88ba55cbc08c75c9edac8ae7f72840482e40324670b299336680c1 AS runner
 WORKDIR /app
 
 # Set environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Security: Update packages and clean up
+RUN apk update && \
+    apk upgrade && \
+    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
