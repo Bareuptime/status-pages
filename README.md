@@ -165,6 +165,17 @@ The ingress routes `*.bareuptime.online` to the status-pages service:
 - No privilege escalation
 - Drops all Linux capabilities
 - TLS enabled via wildcard certificate
+- Uses an init reaper (tini) in the container to prevent zombie processes (e.g., `[rbot]` entries when a child exits and PID 1 does not reap it)
+
+### Unexpected processes in pods
+
+If you see a process like `[rbot]` in `ps` output, it means a short-lived child process exited but was not reaped by PID 1. The status-pages code does not spawn `rbot`; this typically happens when:
+
+- A user or automation ran a command via `kubectl exec` inside the pod
+- A compromised container image or dependency launched a helper process
+- PID 1 was not acting as an init process (fixed by the tini entrypoint)
+
+First check audit logs for exec access; if you find unauthorized access, rotate credentials, then redeploy with the updated image to ensure zombies are reaped.
 
 ## Troubleshooting
 
